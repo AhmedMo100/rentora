@@ -1,0 +1,23 @@
+# Dockerignore
+# Dependencies
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+
+# Build artifacts
+.next
+dist
+out
+.turbo
+apps/*/.next
+apps/*/dist
+apps/*/out
+apps/*/.cache
+
+# Environment and logs
+.git
+.gitignore
+.DS_Store
+*.log
+.env
+.env.*
