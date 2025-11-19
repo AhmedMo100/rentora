@@ -1,0 +1,23 @@
+name: Docker System Reset
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset-docker:
+    name: Clear all Containers, Images, and Volumes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Print warning
+        run: echo "Starting full Docker system reset. This will remove ALL containers, images, and volumes."
+
+      - name: Stop all services (Production)
+        run: docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+
+      - name: Stop all services (Development)
+        run: docker compose -f docker-compose.dev.yml down --volumes --remove-orphans || true
+        
+      - name: Global system prune
+        # Equivalent to 'docker system prune --all --volumes --force'
+        run: docker system prune -a --volumes -f

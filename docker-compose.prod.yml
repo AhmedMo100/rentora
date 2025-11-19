@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # ----------------------
+  #! Web App
+  # ----------------------
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: runner
+    image: rentora/web:latest # Tagging the production image
+    container_name: rentora-web-prod
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      # Use the direct execution command for Next.js (faster, less overhead)
+    command: node ./.next/standalone/server.js # Assuming Next.js standalone mode is used
+    depends_on:
+      - server
+      - mongo
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Dashboard App (FIXED Dockerfile path)
+  # ----------------------
+  dashboard:
+    build:
+      context: .
+      # FIX: Point to the correct Dockerfile for Dashboard
+      dockerfile: ./apps/dashboard/Dockerfile 
+      target: runner
+    image: rentora/dashboard:latest
+    container_name: rentora-dashboard-prod
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+    command: node ./.next/standalone/server.js
+    depends_on:
+      - server
+      - mongo
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Server (NestJS)
+  # ----------------------
+  server:
+    build:
+      context: .
+      dockerfile: ./apps/server/Dockerfile
+      target: runner
+    image: rentora/server:latest
+    container_name: rentora-server-prod
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/rentora
+      REDIS_URL: redis://redis:6379
+    # Use direct Node command for NestJS
+    command: node dist/main.js
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Docs App
+  # ----------------------
+  docs:
+    build:
+      context: .
+      dockerfile: ./apps/docs/Dockerfile
+      target: runner
+    image: rentora/docs:latest
+    container_name: rentora-docs-prod
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: production
+    command: node ./.next/standalone/server.js
+    depends_on:
+      - server
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! MongoDB
+  # ----------------------
+  mongo:
+    image: mongo:6.0
+    container_name: rentora-mongo-prod
+    volumes:
+      - mongo-data:/data/db
+    restart: always # Important for production services
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Redis
+  # ----------------------
+  redis:
+    image: redis:7-alpine
+    container_name: rentora-redis-prod
+    restart: always # Important for production services
+    networks:
+      - rentora-network
+
+volumes:
+  mongo-data:
+
+networks:
+  rentora-network:
+    driver: bridge
