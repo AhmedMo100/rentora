@@ -1,0 +1,138 @@
+services:
+  # ----------------------
+  #! Web App (Next.js)
+  # ----------------------
+  web:
+    image: rentora/web-dev:latest # Naming the image helps
+    build:
+      context: ../..            # Go back to root from tools/docker
+      dockerfile: ./apps/web/Dockerfile
+      target: builder
+    container_name: rentora-web
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ../env/.env.web          # Use Web-specific env file
+    working_dir: /app/apps/web 
+    volumes:
+      - ../..:/app               # Mount the full monorepo
+      - /app/node_modules
+    command: pnpm dev 
+    depends_on:
+      - server
+      - mongo
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Dashboard App (Next.js)
+  # ----------------------
+  dashboard:
+    image: rentora/dashboard-dev:latest
+    build:
+      context: ../..
+      dockerfile: ./apps/dashboard/Dockerfile
+      target: builder
+    container_name: rentora-dashboard
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ../env/.env.dashboard
+    working_dir: /app/apps/dashboard
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+    command: pnpm dev
+    depends_on:
+      - server
+      - mongo
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Server (NestJS)
+  # ----------------------
+  server:
+    image: rentora/server-dev:latest
+    build:
+      context: ../..
+      dockerfile: ./apps/server/Dockerfile
+      target: builder
+    container_name: rentora-server
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ../env/.env.server
+    working_dir: /app/apps/server
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+    command: pnpm start:dev 
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Docs App (Next.js)
+  # ----------------------
+  docs:
+    image: rentora/docs-dev:latest
+    build:
+      context: ../..
+      dockerfile: ./apps/docs/Dockerfile
+      target: builder
+    container_name: rentora-docs
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ../env/.env.docs
+    working_dir: /app/apps/docs
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+    command: pnpm dev
+    depends_on:
+      - server
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! MongoDB
+  # ----------------------
+  mongo:
+    image: mongo:6.0
+    container_name: rentora-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - rentora-network
+
+  # ----------------------
+  #! Redis
+  # ----------------------
+  redis:
+    image: redis:7-alpine
+    container_name: rentora-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - rentora-network
+
+volumes:
+  mongo-data:
+
+networks:
+  rentora-network:
+    driver: bridge
